@@ -127,7 +127,6 @@ class DownSamplingBlock(nn.Module):
         return output
 
 
-
 class UpsamplerBlock (nn.Module):
     def __init__(self, ninput, noutput):
         super().__init__()
@@ -217,7 +216,7 @@ class LFE_Block(nn.Module):
 
         output = self.pwconv(output)
         
-        output = channel_shuffle(output, groups=4)#------
+        output = channel_shuffle(output, groups=4)
         
         return output
     
@@ -226,7 +225,6 @@ class EggNet(nn.Module):
     def __init__(self, classes=1):
         super().__init__()
 
-        # -------------- MSS Stem ----------------#
         self.stem = nn.Sequential(
             Conv(3, 16, 3, 2, padding=1, bn_acti=True),
             Conv(16, 16, 3, 1, padding=1, bn_acti=True, groups=16),
@@ -235,7 +233,6 @@ class EggNet(nn.Module):
             BNPReLU(16)
         )
 
-        # ---------- Semantic Branch -------------#
         self.encoder_1 = nn.Sequential(
             ISA_Block(16, 16),
             BNPReLU(16),
@@ -260,12 +257,10 @@ class EggNet(nn.Module):
             UpsamplerBlock(32, 16)
         )
 
-        # ------------ Local Branch --------------#
         self.local_conv = Conv(16, 32, 3, 1, 1, bn_acti=True, groups=16)
         self.local_pwconv = Conv(32, 32, 1, 1, 0)
         self.lfe = LFE_Block(32, 16)
 
-        # -------------- Seg Head ----------------#
         self.act = BNPReLU(16)
         self.seg_head = nn.Sequential(
             nn.ConvTranspose2d(16, classes, 2, stride=2, padding=0, output_padding=0, bias=True)
@@ -273,16 +268,13 @@ class EggNet(nn.Module):
 
     def forward(self, x):
 
-        # ------------------ Stem --------------------#
         x = self.stem(x)
 
-        # ------------ Semantic Branch ---------------#
         e_1 = self.encoder_1(x)
         e_2 = self.encoder_2(e_1)
         d_2 = self.decoder_2(e_2)
         d_1 = self.decoder_1(d_2)
 
-        # -------------- Local Branch ----------------#  
         local_feature = self.local_conv(x)
         local_feature = self.local_pwconv(local_feature)
         local_feature = self.lfe(local_feature)
@@ -291,17 +283,4 @@ class EggNet(nn.Module):
         out = self.seg_head(output)
 
         return out
-
-
-
-if __name__ == '__main__':
-    model = EggNet(classes=1).cuda(5).eval()
-
-    from thop import profile
-    input = torch.randn(1,3,1024,1024).cuda(5)
-    _,params = profile(model,inputs=(input,))
-    from fvcore.nn import FlopCountAnalysis, parameter_count_table
-    tensor = (torch.rand(1, 3, 1024, 1024).cuda(5),)
-    flops = FlopCountAnalysis(model, tensor)
-
-    print('the flops is {}G,the params is {}M'.format(round(flops.total()/(10**9),3), round(params/(10**6),3)))
+    
