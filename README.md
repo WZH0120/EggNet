@@ -1,1 +1,1 @@
-# EggNet: Egg-shape Network for Retinal Vessel Segmentation on the Edge
+# EggNet: Ultra-Lightweight Egg-Shaped Fusion Network for High-Resolution Retinal Vessel Segmentation
